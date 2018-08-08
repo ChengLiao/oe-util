@@ -1,0 +1,793 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/beans/spring-context.xsd">
+
+	
+	<bean id="portalTransferService" class="com.teradata.util.service.SimpleTransferService">
+		<property name="jdbcTemplateOra">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="portalOracleDataSource"/>
+			</bean>
+		</property>
+		<property name="jdbcTemplateTd">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="mdsTdDataSource"/>
+			</bean>
+		</property>
+		<property name="selSqls">
+		<list>
+			<value><![CDATA[
+			SELECT	USER_ID AS USER_ID, 
+					USER_STATUS_CD AS USER_STATUS_CD, 
+					USER_NAME AS USER_NAME, 
+					USER_DESC AS USER_DESC, 
+					CREATE_DT AS CREATE_DT,
+					UPDATE_DT AS UPDATE_DT, 
+					OPR_ID AS OPR_ID, 
+					USER_EMAIL AS USER_EMAIL, 
+					USER_MOBILE AS USER_MOBILE
+			FROM	WAD.W60_USER
+			]]></value>
+			<value><![CDATA[
+			SELECT
+				ORG_ID AS ORG_ID,
+				CASE WHEN PAR_ORG_ID = '' THEN '-1' ELSE PAR_ORG_ID END AS PAR_ORG_ID,
+				ORG_CODE AS ORG_CODE,
+				ORG_NAME AS ORG_NAME,
+				ORG_TYPE AS ORG_TYPE,
+				ORG_DESC AS ORG_DESC,
+				ORG_ORDER AS ORG_ORDER,
+				CREATE_DT AS CREATE_DT,
+				USER_ID AS USER_ID,
+				UPDATE_DT AS UPDATE_DT
+			FROM
+				WAD.W60_ORGANIZATION
+			]]></value>
+			<value><![CDATA[
+			SELECT	
+				USER_ID AS USER_ID,
+				ORG_ID AS ORG_ID,
+				RELA_VALID_DT AS RELA_VALID_DT,
+				RELA_UPDATE_DT AS RELA_UPDATE_DT
+			FROM
+				WAD.W60_USER_ORG_RELA
+			WHERE RELA_VALID_DT > CURRENT_TIMESTAMP(0)
+			]]></value>
+			<value><![CDATA[
+			SELECT	
+				USER_ID AS USER_ID,
+				CASE WHEN ROLE_NAME = 'administrtaor' THEN '7D07E09DFB0D46889ED6528A5507D9E8'
+					WHEN ROLE_NAME = '数据质量管理员' THEN '81C9B94536044EA4BD0201C6678F2D20'
+					WHEN ROLE_NAME = '数据质量规则维护人' THEN '5D6DA67531F547B4992309E8F1A857FA'
+					WHEN ROLE_NAME = '数据质量投产管理员' THEN 'B5E039892FC240BF9E419AA9F25ACA88'
+					WHEN ROLE_NAME = '数据质量浏览者' THEN 'DCC71774CE7646BFBA9725EE46935915'
+					WHEN ROLE_NAME = '元数据浏览者' THEN '0BB3191DA9634757B43CF6A87EE7C997'
+					WHEN ROLE_NAME = '元数据分析员' THEN 'F181154D36594CD09AF9507E8F6C102E'
+					WHEN ROLE_NAME = '元数据管理员' THEN '71D882F326354417B42B84ECD3914EE7'
+				END AS NEW_ROLE_ID
+			FROM
+				WAD.W60_USER_ROLE_RELA A JOIN WAD.W60_ROLE B ON A.ROLE_ID=B.ROLE_ID
+			WHERE RELA_VALID_DT > CURRENT_TIMESTAMP(0) AND NEW_ROLE_ID IS NOT NULL
+			]]></value>
+		</list>
+		</property>
+		<property name="insSqls">
+		<list>
+			<value><![CDATA[
+				INSERT INTO M60_USER VALUES(
+					:USER_ID, 
+					:USER_STATUS_CD, 
+					:USER_NAME, 
+					:USER_DESC, 
+					:CREATE_DT,
+					:UPDATE_DT, 
+					:OPR_ID, 
+					:USER_EMAIL, 
+					:USER_MOBILE
+				)
+			]]></value> 
+			<value><![CDATA[
+			INSERT INTO M60_ORGANIZATION VALUES(
+				:ORG_ID,
+				:PAR_ORG_ID,
+				:ORG_CODE,
+				:ORG_NAME,
+				:ORG_TYPE,
+				:ORG_DESC,
+				:ORG_ORDER,
+				:CREATE_DT,
+				:USER_ID,
+				:UPDATE_DT
+			)
+			]]></value>
+			<value><![CDATA[
+			INSERT INTO M60_USER_ORG_RELA VALUES(
+				:USER_ID,
+				:ORG_ID
+			)
+			]]></value>
+			<value><![CDATA[
+			INSERT INTO M60_USER_ROLE_RELA VALUES(
+				:NEW_ROLE_ID,
+				:USER_ID
+			)
+			]]></value>
+		</list>
+		</property>
+	</bean>
+	
+	<bean id="mdsTransferService" class="com.teradata.util.service.SimpleTransferService">
+		<property name="jdbcTemplateOra">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="mdsOracleDataSource"/>
+			</bean>
+		</property>
+		<property name="jdbcTemplateTd">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="mdsTdDataSource"/>
+			</bean>
+		</property>
+		<property name="selSqls">
+		<list>
+			<value><![CDATA[
+			SELECT
+				'48a74941cf104b3bb4b4a261acd9cdd3' AS CMD_ID,
+				'TDSQLLoader.pl' AS CMD_NAME,
+				GROUP_NAME AS GROUP_NAME,
+				VARIABLE_NAME AS VARIABLE_NAME,
+				VARIABLE_VALUE,
+				START_DT AS START_DT,
+				END_DT AS END_DT
+			FROM
+				M99_GROUP_VARIABLE
+			]]></value>
+			<value><![CDATA[
+			SELECT
+				'e99eb65efc344c9fbcede5d4097e0cfe' AS CMD_ID,
+				'TDSQLLoaderHis.pl' AS CMD_NAME,
+				GROUP_NAME AS GROUP_NAME,
+				VARIABLE_NAME AS VARIABLE_NAME,
+				OREPLACE(VARIABLE_VALUE,'VIEW','VHIS') AS VARIABLE_VALUE,
+				START_DT AS START_DT,
+				END_DT AS END_DT
+			FROM
+				M99_GROUP_VARIABLE
+			]]></value>
+		</list>
+		</property>
+		<property name="insSqls">
+		<list>
+			<value><![CDATA[
+				INSERT INTO M30_CMD_GROUP_VARIABLE(
+					CMD_ID,
+					CMD_NAME,
+					GROUP_NAME,
+					VARIABLE_NAME,
+					VARIABLE_VALUE,
+					START_DT,
+					END_DT
+				)VALUES(
+					:CMD_ID,
+					:CMD_NAME,
+					:GROUP_NAME,
+					:VARIABLE_NAME,
+					:VARIABLE_VALUE,
+					:START_DT,
+					:END_DT
+				)
+			]]></value>
+			<value><![CDATA[
+				INSERT INTO M30_CMD_GROUP_VARIABLE(
+					CMD_ID,
+					CMD_NAME,
+					GROUP_NAME,
+					VARIABLE_NAME,
+					VARIABLE_VALUE,
+					START_DT,
+					END_DT
+				)VALUES(
+					:CMD_ID,
+					:CMD_NAME,
+					:GROUP_NAME,
+					:VARIABLE_NAME,
+					:VARIABLE_VALUE,
+					:START_DT,
+					:END_DT
+				)
+			]]></value>
+		</list>
+		</property>
+	</bean>
+	
+	<bean id="userTransferService" class="com.teradata.util.service.PasswordTransferService">
+		<property name="jdbcTemplateOra">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="portalOracleDataSource"/>
+			</bean>
+		</property>
+		<property name="jdbcTemplateTd">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="mdsTdDataSource"/>
+			</bean>
+		</property>
+		<property name="selSqls">
+		<list>
+			<value><![CDATA[
+				SELECT
+					USER_ID AS USER_ID,
+					USER_PWD AS USER_PWD
+				FROM WAD.W60_USER_PWD_CHANGE_HIS 
+				QUALIFY ROW_NUMBER() OVER (PARTITION BY USER_ID ORDER BY UPDATE_DT DESC) = 1
+			]]></value>
+		</list>
+		</property>
+		<property name="insSqls">
+		<list>
+			<value><![CDATA[
+				INSERT INTO M60_USER_PWD VALUES(
+					:USER_ID,
+					CURRENT_TIMESTAMP(0),
+					:USER_PWD
+				)
+			]]></value>
+		</list>
+		</property>
+	</bean>
+	
+	<bean id="paginationTransferService" class="com.teradata.util.service.PaginationTransferService">
+		<property name="jdbcTemplateOra">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="dqcOracleDataSource"/>
+			</bean>
+		</property>
+		<property name="jdbcTemplateTd">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="dqcTdDataSource"/>
+			</bean>
+		</property>
+		<property name="pageSize" value="${sql.teradata.pageSize}" />
+		<property name="selSqls">
+		<list>
+			<value><![CDATA[
+			SELECT 
+				*
+			FROM 
+			(
+				SELECT
+					CALENDAR_DATE AS CALENDAR_DATE,
+					DAY_OF_WEEK AS DAY_OF_WEEK,
+					DAY_OF_MONTH AS DAY_OF_MONTH,
+					DAY_OF_YEAR AS DAY_OF_YEAR,
+					DAY_OF_CALENDAR AS DAY_OF_CALENDAR,
+					WEEKDAY_OF_MONTH AS WEEKDAY_OF_MONTH,
+					WEEK_OF_MONTH AS WEEK_OF_MONTH,
+					WEEK_OF_YEAR AS WEEK_OF_YEAR,
+					WEEK_OF_CALENDAR AS WEEK_OF_CALENDAR,
+					MONTH_OF_QUARTER AS MONTH_OF_QUARTER,
+					MONTH_OF_YEAR AS MONTH_OF_YEAR,
+					MONTH_OF_CALENDAR AS MONTH_OF_CALENDAR,
+					QUARTER_OF_YEAR AS QUARTER_OF_YEAR,
+					QUARTER_OF_CALENDAR AS QUARTER_OF_CALENDAR,
+					YEAR_OF_CALENDAR AS YEAR_OF_CALENDAR,
+					ROW_NUMBER() OVER(
+						ORDER BY 
+						CALENDAR_DATE
+					)  AS CC
+				FROM
+					SYS_CALENDAR.CALENDAR
+			) T
+			WHERE
+				CC >= :START AND CC < :START+:LIMIT
+			]]></value>
+		</list>
+		</property>
+		<property name="insSqls">
+		<list>
+			<value><![CDATA[
+				INSERT INTO M99_SYS_CALENDAR 
+				(
+			       CALENDAR_DATE,
+					DAY_OF_WEEK,
+					DAY_OF_MONTH,
+					DAY_OF_YEAR,
+					DAY_OF_CALENDAR,
+					WEEKDAY_OF_MONTH,
+					WEEK_OF_MONTH,
+					WEEK_OF_YEAR,
+					WEEK_OF_CALENDAR,
+					MONTH_OF_QUARTER,
+					MONTH_OF_YEAR,
+					MONTH_OF_CALENDAR,
+					QUARTER_OF_YEAR,
+					QUARTER_OF_CALENDAR,
+					YEAR_OF_CALENDAR
+				)VALUES(
+					:CALENDAR_DATE,
+					:DAY_OF_WEEK,
+					:DAY_OF_MONTH,
+					:DAY_OF_YEAR,
+					:DAY_OF_CALENDAR,
+					:WEEKDAY_OF_MONTH,
+					:WEEK_OF_MONTH,
+					:WEEK_OF_YEAR,
+					:WEEK_OF_CALENDAR,
+					:MONTH_OF_QUARTER,
+					:MONTH_OF_YEAR,
+					:MONTH_OF_CALENDAR,
+					:QUARTER_OF_YEAR,
+					:QUARTER_OF_CALENDAR,
+					:YEAR_OF_CALENDAR
+				)
+			]]></value>
+		</list>
+		</property>
+	</bean>
+	
+	<bean id="dqcTransferService" class="com.teradata.util.service.dqc.DqcTransferService">
+		<property name="jdbcTemplateOra">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="dqcOracleDataSource"/>
+			</bean>
+		</property>
+		<property name="jdbcTemplateTd">
+			<bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+				<constructor-arg ref="dqcTdDataSource"/>
+			</bean>
+		</property>
+		<property name="pageSize" value="${sql.teradata.pageSize}" />
+		<property name="selSqls">
+		<list>
+		<!-- 	DQType 模板-->
+			<!-- <value><![CDATA[
+				SELECT 
+					*
+				FROM 
+				(
+					SELECT	
+						DQType_ID				AS DQTYPE_ID
+						, Start_Dt				AS START_DT
+						, DQType_Name			AS DQTYPE_NAME
+						, DQType_Desc			AS DQTYPE_DESC
+						, CAST(SQLTemplate AS VARCHAR(5000))  AS SQLTEMPLATE
+						, Setting1Desc			AS SETTING1DESC
+						, Setting2Desc			AS SETTING2DESC
+						, Setting3Desc			AS SETTING3DESC
+						, Setting4Desc			AS SETTING4DESC
+						, Setting5Desc			AS SETTING5DESC
+						, Setting6Desc			AS SETTING6DESC
+						, Setting7Desc			AS SETTING7DESC
+						, Setting8Desc			AS SETTING8DESC
+						, Result1_Desc			AS RESULT1_DESC
+						, Result2_Desc			AS RESULT2_DESC
+						, Result3_Desc			AS RESULT3_DESC
+						, Result4_Desc			AS RESULT4_DESC
+						, Result5_Desc			AS RESULT5_DESC
+						, Result6_Desc			AS RESULT6_DESC
+						, Result7_Desc			AS RESULT7_DESC
+						, Result8_Desc			AS RESULT8_DESC
+						, Result9_Desc			AS RESULT9_DESC
+						, Result10_Desc			AS RESULT10_DESC
+						, Author_ID				AS AUTHOR_ID
+						, Owner_ID				AS OWNER_ID
+						, End_Dt				AS END_DT
+						, ERRColumn1Desc		AS ERRCOLUMN1DESC
+						, ERRColumn2Desc		AS ERRCOLUMN2DESC
+						, ERRColumn3Desc		AS ERRCOLUMN3DESC
+						, Publish_CD			AS PUBLISH_CD
+						,ROW_NUMBER() OVER(
+							ORDER BY 
+							DQTYPE_ID
+							,START_DT
+						)  AS CC
+					FROM	
+						M07_DQTYPE
+					) T
+				WHERE
+					CC >= :START AND CC < :START+:LIMIT
+			]]></value>
+			
+			CheckList 规则
+			<value><![CDATA[
+			SELECT 
+					*
+				FROM 
+				(
+					SELECT	
+						A.DQID				AS DQID
+						, Start_Dt			AS START_DT
+						, Task_Name			AS TASK_NAME	
+						, Task_Desc			AS TASK_DESC
+						, DQType_ID			AS DQTYPE_ID
+						, Setting1			AS SETTING1
+						, Setting2			AS SETTING2
+						, CAST (Setting3 AS VARCHAR(5200))		AS SETTING3
+						, Setting4			AS SETTING4
+						, Setting5			AS SETTING5
+						, Setting6			AS SETTING6
+						, Setting7			AS SETTING7
+						, Setting8			AS SETTING8
+						, Error_Level_Cd		AS ERROR_LEVEL_CD
+						, ETL_Job_ID		AS ETL_JOB_ID
+						, DQTask_Status_Cd		AS DQTASK_STATUS_CD
+						, Target_Table			AS TARGET_TABLE
+						, SaveErrors			AS SAVEERRORS
+						, TargetTableSaveDays   AS TARGETTABLESAVEDAYS
+						, OWNER					AS OWNER
+						, End_Dt				AS END_DT
+						, Stage_cd				AS STAGE_CD
+						, DQ_Class_Cd				AS DQ_CLASS_CD
+						, DQ_SubClass_ID			AS DQ_SUBCLASS_ID
+						, HANDLE_MODE_Cd				AS HANDLE_MODE_CD
+						, Reviewer				AS REVIEWER
+						, Updater				AS UPDATER
+						, Interval_Cd			AS INTERVAL_CD
+						, Interval_Day				AS INTERVAL_DAY
+						, Interval_Param_Cd			AS INTERVAL_PARAM_CD
+						, Task_Comment			AS TASK_COMMENT
+						, Publish_CD			AS PUBLISH_CD
+						, B.ALARM_CD 			AS ALARM_CD
+						,ROW_NUMBER() OVER(
+									ORDER BY 
+									A.DQID
+									,A.START_DT
+								)  AS CC
+					FROM	
+						M07_CheckList A
+					LEFT JOIN(
+								SELECT 
+									A.DQID AS DQID
+									, CASE C.FLAG WHEN 2 THEN 3 ELSE B.DQTask_Alarm_Type_Cd END AS ALARM_CD 
+								FROM M07_CheckList A
+								LEFT JOIN M07_DQTASK_ALARM_RELA  B ON A.DQID = B.DQID
+								LEFT JOIN (SELECT DQID,COUNT(1) AS FLAG FROM  M07_DQTASK_ALARM_RELA GROUP BY DQID ) C ON C.DQID = A.DQID
+								GROUP BY A.DQID,ALARM_CD
+					) B ON A.DQID = B.DQID
+			) T
+				WHERE
+					CC >= :START AND CC < :START+:LIMIT
+			]]></value> -->
+
+		</list>
+		</property>
+		<property name="insSqls">
+		<list>
+<!-- 			DQType 模板 -->
+			<value><![CDATA[
+				INSERT INTO M07_DQTYPE
+					(
+				        DQTYPE_ID    ,
+				        START_DT     ,
+				        DQTYPE_NAME ,
+				        DQTYPE_DESC ,
+				        SQLTEMPLATE  ,
+				        SETTING1DESC ,
+				        SETTING2DESC ,
+				        SETTING3DESC ,
+				        SETTING4DESC ,
+				        SETTING5DESC ,
+				        SETTING6DESC ,
+				        SETTING7DESC ,
+				        SETTING8DESC ,
+				        RESULT1_DESC ,
+				        RESULT2_DESC ,
+				        RESULT3_DESC ,
+				        RESULT4_DESC ,
+				        RESULT5_DESC ,
+				        RESULT6_DESC ,
+				        RESULT7_DESC ,
+				        RESULT8_DESC ,
+				        RESULT9_DESC ,
+				        RESULT10_DESC ,
+				        ERRCOLUMN1DESC ,
+				        ERRCOLUMN2DESC ,
+				        ERRCOLUMN3DESC ,
+				        OPERATOR_ID  ,
+				        OWNER_ID  ,
+				        VIEWER_ID  ,
+				        END_DT  ,
+				        PUBLISH_CD
+				)VALUES(
+					  :DQTYPE_ID
+					, :START_DT
+					, :DQTYPE_NAME
+					, :DQTYPE_DESC
+					, :SQLTEMPLATE
+					, :SETTING1DESC
+					, :SETTING2DESC
+					, :SETTING3DESC
+					, :SETTING4DESC
+					, :SETTING5DESC
+					, :SETTING6DESC
+					, :SETTING7DESC
+					, :SETTING8DESC
+					, :RESULT1_DESC
+					, :RESULT2_DESC
+					, :RESULT3_DESC
+					, :RESULT4_DESC
+					, :RESULT5_DESC
+					, :RESULT6_DESC
+					, :RESULT7_DESC
+					, :RESULT8_DESC
+					, :RESULT9_DESC
+					, :RESULT10_DESC
+					, :ERRCOLUMN1DESC
+					, :ERRCOLUMN2DESC
+					, :ERRCOLUMN3DESC
+					, :AUTHOR_ID
+					, :AUTHOR_ID
+					, :OWNER_ID
+					, :END_DT
+					, :PUBLISH_CD
+				)
+			]]></value>
+			
+<!-- 			CheckList 规则 -->
+			<value><![CDATA[
+				INSERT INTO M07_CHECKLIST
+					(
+				        DQID  ,
+				        DQTYPE_ID  ,
+				        ERROR_LEVEL_CD  ,
+				        ETL_JOB_ID  ,
+				        INTERVAL_CD  ,
+				        INTERVAL_DAY ,
+				        INTERVAL_PARAM ,
+				        HANDLE_MODE_CD  ,
+				        DQTASK_STATUS_CD  ,
+				        SAVE_ERRORS  ,
+				        STAGE_CD  ,
+				        DQ_CLASS_CD ,
+				        DQ_SUBCLASS_CD ,
+				        START_DT ,
+				        END_DT ,
+				        TASK_NAME  ,
+				        TASK_DESC ,
+				        OPERATE_DESC ,
+				        SETTING1 ,
+				        SETTING2 ,
+				        SETTING3 ,
+				        SETTING4 ,
+				        SETTING5 ,
+				        SETTING6 ,
+				        SETTING7 ,
+				        SETTING8 ,
+				        DATASOURCE_ID ,
+				        ALARM_CD  ,
+				        OWNER_ID ,
+				        VIEWER_ID  ,
+				        OPERATOR_ID  ,
+				        PUBLISH_CD 
+				)VALUES(
+					  :DQID
+					, :DQTYPE_ID
+					, :ERROR_LEVEL_CD
+					, :ETL_JOB_ID
+					, :INTERVAL_CD
+					, :INTERVAL_DAY
+					, :INTERVAL_PARAM_CD
+					, :HANDLE_MODE_CD
+					, :DQTASK_STATUS_CD
+					, :SAVEERRORS
+					, :STAGE_CD
+					, :DQ_CLASS_CD
+					, :DQ_SUBCLASS_ID
+					, :START_DT
+					, :END_DT
+					, :TASK_NAME
+					, :TASK_DESC
+					, :TASK_COMMENT
+					, :SETTING1
+					, :SETTING2
+					, :SETTING3
+					, :SETTING4
+					, :SETTING5
+					, :SETTING6
+					, :SETTING7
+					, :SETTING8
+					, 'cmbdw'
+					, :ALARM_CD
+					, :OWNER
+					, :REVIEWER
+					, :UPDATER
+					, :PUBLISH_CD
+				)
+			]]></value>
+			
+			
+		</list>
+		</property>
+		<!-- 用于查询总数 -->
+		<property name="selCnts">
+			<list>
+			<!-- 模板总数 -->
+				<value>
+					SELECT COUNT(1) AS CNT FROM M07_DQTYPE
+				</value>
+				<!-- 规则总数 -->
+				<value>
+					SELECT COUNT(1) AS CNT FROM M07_CHECKLIST
+				</value>
+			</list>
+		</property>
+		<!-- 每个循环的描述 -->
+		<property name="sqlDesc">
+			<list>
+				<value>M07_DQTYPE表 (模板)</value>
+				<value>M07_CHECKLIST表 (规则)</value>
+			</list>
+		</property>
+		
+		<!-- 用于初始化 M07_CheckTable -->
+		<property name="checkTableSqls">
+			<list>
+				<!-- 生效已投产规则 -->
+				<value>
+				<![CDATA[
+				SELECT 
+						*
+					FROM 
+					(
+					
+						SELECT 
+					       	  DQID					AS DQID
+					         ,DQTYPE_ID				AS DQTYPE_ID
+					         ,ERROR_LEVEL_CD		AS ERROR_LEVEL_CD
+					         ,HANDLE_MODE_CD		AS HANDLE_MODE_CD
+					         ,DQTASK_STATUS_CD		AS DQTASK_STATUS_CD
+					         ,SAVE_ERRORS			AS SAVE_ERRORS
+					         ,START_DT				AS START_DT
+					         ,END_DT				AS END_DT
+					         ,SETTING1				AS SETTING1
+					         ,SETTING2				AS SETTING2
+					         ,SETTING3				AS SETTING3
+					         ,SETTING4				AS SETTING4
+					         ,SETTING5				AS SETTING5
+					         ,SETTING6				AS SETTING6
+					         ,SETTING7				AS SETTING7
+					         ,SETTING8				AS SETTING8
+					         ,'cmbdw'				AS DATASOURCE_ID
+					         ,ROW_NUMBER() OVER(
+												ORDER BY 
+												A.DQID
+												,A.START_DT
+											)  AS CC
+					    FROM M07_CHECKLIST A
+					    WHERE
+					       (A.DQID,A.START_DT)
+					       IN
+					       (
+					        SELECT 
+					                DQID
+					                ,MAX(START_DT) AS START_DT 
+					                FROM M07_CHECKLIST 
+					                WHERE PUBLISH_CD = 1 GROUP BY DQID 
+					        ) 
+					        AND START_DT <> END_DT 
+					        AND DQTASK_STATUS_CD = 1 
+					        AND PUBLISH_CD = 1 
+			        ) T
+					WHERE
+						CC >= :START AND CC < :START+:LIMIT
+						]]>
+				</value>
+				
+				<!-- M07_CHECKTABLE  -->
+				<value>
+					INSERT INTO M07_CHECKTABLE
+					( DQID , START_DT , DATABASENAME ,TABLENAME ,DATASOURCE_ID)
+					VALUES
+					(
+						:DQID 
+						,:START_DT 
+						,:DATABASENAME
+						,:TABLENAME
+						,:DATASOURCE_ID
+					)
+				</value>
+				
+				<!-- 生效已投产规则 总数-->
+				<value>
+				<![CDATA[
+	
+						SELECT 
+					       	 COUNT(1)	AS CNT 
+					    FROM M07_CHECKLIST A
+					    WHERE
+					       (A.DQID,A.START_DT)
+					       IN
+					       (
+					        SELECT 
+					                DQID
+					                ,MAX(START_DT) AS START_DT 
+					                FROM M07_CHECKLIST 
+					                WHERE PUBLISH_CD = 1 GROUP BY DQID 
+					        ) 
+					        AND START_DT <> END_DT 
+					        AND DQTASK_STATUS_CD = 1 
+					        AND PUBLISH_CD = 1 
+						]]>
+				</value>
+				
+				<!-- CHECKTABLE总数 -->
+				<value>
+					SELECT COUNT(1) AS CNT FROM M07_CHECKTABLE
+				</value>
+				
+				<value>M07_CHECKTABLE 表 (CHECKTABLE)</value>
+			</list>
+		</property>
+		<!-- 生效已投产模板 -->
+		<property name="selPublishDqType">
+			<value>
+			<![CDATA[
+				SELECT
+					DQTYPE_ID		AS DQTYPE_ID
+					,SQLTEMPLATE	AS SQLTEMPLATE
+				FROM
+					M07_DQTYPE
+				WHERE
+					(DQTYPE_ID,START_DT)
+					IN
+					(
+						SELECT DQTYPE_ID, MAX(START_DT) AS START_DT
+						FROM M07_DQTYPE
+						WHERE
+						PUBLISH_CD = 1
+						AND START_DT <> END_DT
+						GROUP BY DQTYPE_ID 
+					)
+					]]>
+			</value>
+		</property>
+
+	</bean>
+	
+	<bean id="mdsOracleDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${mds.oracle.jdbc.driverClassName}"/>
+		<property name="url" value="${mds.oracle.jdbc.url}"/>
+		<property name="username" value="${mds.oracle.jdbc.username}"/>
+		<property name="password" value="${mds.oracle.jdbc.password}"/>
+	</bean>
+	
+	<bean id="mdsTdDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${mds.teradata.jdbc.driverClassName}"/>
+		<property name="url" value="${mds.teradata.jdbc.url}"/>
+		<property name="username" value="${mds.teradata.jdbc.username}"/>
+		<property name="password" value="${mds.teradata.jdbc.password}"/>
+	</bean>
+	
+	<bean id="dqcOracleDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${dqc.oracle.jdbc.driverClassName}"/>
+		<property name="url" value="${dqc.oracle.jdbc.url}"/>
+		<property name="username" value="${dqc.oracle.jdbc.username}"/>
+		<property name="password" value="${dqc.oracle.jdbc.password}"/>
+	</bean>
+	
+	<bean id="dqcTdDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${dqc.teradata.jdbc.driverClassName}"/>
+		<property name="url" value="${dqc.teradata.jdbc.url}"/>
+		<property name="username" value="${dqc.teradata.jdbc.username}"/>
+		<property name="password" value="${dqc.teradata.jdbc.password}"/>
+	</bean>
+	
+	<bean id="portalOracleDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${portal.oracle.jdbc.driverClassName}"/>
+		<property name="url" value="${portal.oracle.jdbc.url}"/>
+		<property name="username" value="${portal.oracle.jdbc.username}"/>
+		<property name="password" value="${portal.oracle.jdbc.password}"/>
+	</bean>
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:env.properties</value>
+			</list>
+		</property>
+		<property name="ignoreResourceNotFound" value="false"/>
+	</bean>
+</beans>
