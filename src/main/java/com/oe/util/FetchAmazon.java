@@ -15,11 +15,11 @@ import org.jsoup.select.Elements;
 @SuppressWarnings("serial")
 public class FetchAmazon {
 	
-	public static String skuUrl = "http://113.108.97.88:91/v3real/productindex.php?keys=&goodscategory=-1&module=warehouse&action=%E8%B4%A7%E5%93%81%E8%B5%84%E6%96%99%E7%AE%A1%E7%90%86&warehouse=&isuse=%E5%9C%A8%E5%8D%96%20%E6%9C%89%E5%BA%93%E5%AD%98&searchs=6&factory=&cguser=&salesuser=&sale_lb=1&stock_count=pageindex=";
+	public static String skuUrl = "http://113.108.97.88:91/v3real/productindex.php?keys=&goodscategory=-1&module=warehouse&action=%E8%B4%A7%E5%93%81%E8%B5%84%E6%96%99%E7%AE%A1%E7%90%86&warehouse=&isuse=%E5%9C%A8%E5%8D%96%20%E6%9C%89%E5%BA%93%E5%AD%98&searchs=6&factory=&cguser=&salesuser=&sale_lb=2&stock_count=&pageindex=";
 	public static String mainUrl = "http://113.108.97.88:91/v3real/";
 	public static Map<String, String> commonHeaders = new HashMap<String, String>(){
 		{
-			put("Cookie", "PHPSESSID=km50kfvu8qlldgkdlp30dqkf23; token=2346_0410e44d2e4dc8fa8d6a91f932ad756e; token_timestamp=1537883516699 ");
+			put("Cookie", "PHPSESSID=qlm29lgtckuqqvrkf2nmau20j4; token=2346_0410e44d2e4dc8fa8d6a91f932ad756e;  ");
 		}};
 	
 		public static Map<String, String> amazonHeaders = new HashMap<String, String>(){
@@ -44,31 +44,42 @@ public class FetchAmazon {
 		
 		while(true) {
 			for (Element element : select) {
+				long start = System.currentTimeMillis();
 				Sku sku = new Sku();
-				sku.setId(element.child(1).select("div").get(2).html());
-				sku.setPicLink(element.child(1).select("div").get(4).select("a").get(0).attr("href"));
-				sku.setPrice(parsePirce(element.child(4).select("div").get(3).html()));
-				sku.setLink(element.child(7).select("li").get(4).child(0).attr("href"));
-				
-				SubSku subSku = new SubSku();
-				subSku.setId(element.child(1).select("div").get(1).child(0).html());
-				subSku.setSkuid(element.child(1).select("div").get(2).html());
-				
-				if(getAgeGroup(sku)) {
-					if(skus.contains(sku)) {
-						find(skus, sku.getId()).getSubSkus().add(subSku);
-					}else {
-						sku.getSubSkus().add(subSku);
-						skus.add(sku);
+				try {
+					sku.setId(element.child(1).select("div").get(2).html());
+					sku.setPicLink(element.child(1).select("div").get(4).select("a").get(0).attr("href"));
+					sku.setPrice(parsePirce(element.child(4).select("div").get(3).html()));
+					sku.setLink(element.child(7).select("li").get(4).child(0).attr("href"));
+					
+					SubSku subSku = new SubSku();
+					subSku.setId(element.child(1).select("div").get(1).child(0).html());
+					subSku.setSkuid(element.child(1).select("div").get(2).html());
+					
+					if(getAgeGroup(sku)) {
+						if(skus.contains(sku)) {
+							find(skus, sku.getId()).getSubSkus().add(subSku);
+						}else {
+							sku.getSubSkus().add(subSku);
+							skus.add(sku);
+						}
 					}
+					
+					System.out.println("searched : " + sku.getId());
+					
+					//查找链接， 访问，获取name desc size
+					getName(sku);
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 				
-				System.out.println("searched : " + sku.getId());
-				
-				//查找链接， 访问，获取name desc size
-				getName(sku);
-				
 				//查找图片
+				//TODO
+				
+				
+				long end = System.currentTimeMillis();
+				System.out.println("reqeusting time : " + (start-end)/1000 + "s");
+				System.out.println("current sku size : " + skus.size());
 			}
 			if(select.size() == 0 ) {
 				break;
