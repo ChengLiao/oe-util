@@ -34,15 +34,13 @@ public class FetchAmazon {
 	
 	public static void main(String[] args) throws Exception {
 		int index = 1;
-		
-		
-		System.out.println("request v3, index : " + index);
-		String skuList = HttpUtils.sendGet(skuUrl + index , null, commonHeaders);
-		System.out.println("request v3, index : " + index + ";end");
-		Document doc = Jsoup.parse(skuList);
-		Elements select = doc.select("#main .listViewBody .list>tbody .oddListRowS1");
-		
 		while(true) {
+			System.out.println("request v3, index : " + index);
+			String skuList = HttpUtils.sendGet(skuUrl + index , null, commonHeaders);
+			System.out.println("request v3, index : " + index + ";end");
+			Document doc = Jsoup.parse(skuList);
+			Elements select = doc.select("#main .listViewBody .list>tbody .oddListRowS1");
+			
 			for (Element element : select) {
 				long start = System.currentTimeMillis();
 				Sku sku = new Sku();
@@ -85,6 +83,9 @@ public class FetchAmazon {
 				break;
 			}
 			index ++;
+			if(index > 3) {
+				break;
+			}
 		}
 		
 		
@@ -92,10 +93,10 @@ public class FetchAmazon {
 			for(int i=0; i< sku.getSubSkus().size(); i++) {
 				sku.getSubSkus().get(i).setSize(sku.getSizes().get(i));
 			}
-			System.out.println(sku);
 		}
 		System.out.println("writting file...");
-		FileUtils.writeStringToFile(new File("/root/amazon/skus.json"), JsonUtil.toJson(skus));
+		System.out.println(skus);
+//		FileUtils.writeStringToFile(new File("/root/amazon/skus.json"), JsonUtil.toJson(skus));
 	}
 
 
