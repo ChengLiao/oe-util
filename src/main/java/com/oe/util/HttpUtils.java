@@ -51,7 +51,7 @@ public class HttpUtils {
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36 OPR/18.0.1284.68",
             "Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25",
             "Mozilla/5.0 (iPad; CPU OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4",
-            "Mozilla/5.0 (iPad; CPU OS 7_0_2 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A501 Safari/9537.53"
+            "Mozilla/5.0 (iPad; CPU OS 7_0_2 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A501 Safari/9537.53",
     };
 	
 	
@@ -113,13 +113,15 @@ public class HttpUtils {
 					.openConnection();
 			// 设置通用属性
 			httpConn.setRequestProperty("Accept", "*/*");
-			httpConn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
+			
 			
 			if(headers != null){
 				for (Entry<String, String> e : headers.entrySet()) {
 					httpConn.setRequestProperty(e.getKey(), e.getValue());
 				}
 			}
+			
+			httpConn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
 			
 			// 建立实际的连接
 			httpConn.connect();
@@ -223,13 +225,13 @@ public class HttpUtils {
 			conn.setDoOutput(true);
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
 			//设置额外的请求header
 			if(headers != null){
 				for (Entry<String, String> e : headers.entrySet()) {
 					conn.setRequestProperty(e.getKey(), e.getValue());
 				}
 			}
+			conn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
 		} catch (IOException e) {
 			String msg = String.format(
 					"Failed to connect sms API[%s] in [%d] seconds: %s", spec,

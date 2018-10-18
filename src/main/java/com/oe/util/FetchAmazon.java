@@ -1,13 +1,11 @@
 package com.oe.util;
 
-import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -28,6 +26,7 @@ public class FetchAmazon {
 				put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 				put("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2");
 				put("Accept-Encoding", "gzip, deflate, br");
+				put("Cookie", "session-id=130-6008218-5491360; session-id-time=2082787201l; x-wl-uid=1+eV3ap+PUeUyZuG9X6zy2eN+qIrPXTTj2WXumRsjD0JIAm9OnLk5wtgY/jMHny9GZew5yt9p2IY=; ubid-acbca=133-1360565-2515551; session-token=E5J8AxLzu2iBTpJtJ5Vtn3V/Q520PssVCL+cqNS0kYw0mVHJbtqNBxDQ2Q64I9whf8bebMBjyMmrPp+r4T0o1P5eO/Slt8t7ySwBjUnkfuC3ZNSAXxbiN96TfkkxtjLtH1AGDAcrHhGfG5Hr171wr38TrWhjS/I5v51LSaFNPoRgNmXAT7dVZSigaxhmIdFYXgDMiygMU+hFOnmPMiz9nZ7la47TDDZcE/4LTGotCJ6AYX7DaLCEDBwAxAdV8TOt; csm-hit=tb:s-MXJHNKPRYE2FB7915Z23|1539826424972&t:1539826424972&adb:adblk_no ");
 			}};
 	
 	public static List<Sku> skus = new ArrayList<Sku>();
@@ -61,12 +60,15 @@ public class FetchAmazon {
 							sku.getSubSkus().add(subSku);
 							skus.add(sku);
 						}
+						//查找链接， 访问，获取name desc size
+						getName(sku);
+						
+						System.out.println("searched : " + sku.getId());
+					}else {
+						System.out.println("skkiped sku : " + sku.getId());
 					}
 					
-					System.out.println("searched : " + sku.getId());
 					
-					//查找链接， 访问，获取name desc size
-					getName(sku);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -90,8 +92,10 @@ public class FetchAmazon {
 		
 		
 		for (Sku sku : skus) {
-			for(int i=0; i< sku.getSubSkus().size(); i++) {
-				sku.getSubSkus().get(i).setSize(sku.getSizes().get(i));
+			if(sku.getSizes().size() == sku.getSubSkus().size()) {
+				for(int i=0; i< sku.getSubSkus().size(); i++) {
+					sku.getSubSkus().get(i).setSize(sku.getSizes().get(i));
+				}
 			}
 		}
 		System.out.println("writting file...");
