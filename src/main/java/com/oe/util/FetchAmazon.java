@@ -1,11 +1,13 @@
 package com.oe.util;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -35,7 +37,21 @@ public class FetchAmazon {
 		int index = 1;
 		while(true) {
 			System.out.println("request v3, index : " + index);
-			String skuList = HttpUtils.sendGet(skuUrl + index , null, commonHeaders);
+			String skuList = "";
+			try {
+				skuList = HttpUtils.sendGet(skuUrl + index , null, commonHeaders);
+			} catch (Exception e1) {
+				System.out.println("------------request v3 fail");
+				System.out.println("retrying...");
+				try {
+					skuList = HttpUtils.sendGet(skuUrl + index , null, commonHeaders);
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.out.println("------------request v3 fail end");
+					index ++;
+					continue;
+				}
+			}
 			System.out.println("request v3, index : " + index + ";end");
 			Document doc = Jsoup.parse(skuList);
 			Elements select = doc.select("#main .listViewBody .list>tbody .oddListRowS1");
@@ -85,9 +101,9 @@ public class FetchAmazon {
 				break;
 			}
 			index ++;
-			if(index > 3) {
+			/*if(index > 3) {
 				break;
-			}
+			}*/
 		}
 		
 		
@@ -99,8 +115,8 @@ public class FetchAmazon {
 			}
 		}
 		System.out.println("writting file...");
-		System.out.println(skus);
-//		FileUtils.writeStringToFile(new File("/root/amazon/skus.json"), JsonUtil.toJson(skus));
+//		System.out.println(skus);
+		FileUtils.writeStringToFile(new File("/root/amazon/skus.json"), JsonUtil.toJson(skus));
 	}
 
 
