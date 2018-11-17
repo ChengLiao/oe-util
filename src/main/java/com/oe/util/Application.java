@@ -19,7 +19,7 @@ public class Application {
 	@RequestMapping("/")
 	@ResponseBody
 	public String hello() throws Exception {
-		FetchAmazon.main(null);
+//		ReadJson.main(null);
 		return "success";
 	}
 

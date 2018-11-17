@@ -16,6 +16,7 @@ import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -121,12 +122,70 @@ public class HttpUtils {
 				}
 			}
 			
-			httpConn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
+//			httpConn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
 			
 			// 建立实际的连接
 			httpConn.connect();
 			
 			return getBytesFromStream(httpConn.getInputStream());
+		} finally {
+			try {
+				if (in != null) {
+					in.close();
+				}
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * 发送GET请求
+	 * @param url
+	 *            目的地址
+	 * @param parameters
+	 *            请求参数，Map类型。
+	 * @return 远程响应结果
+	 */
+	public static Map<String, List<String>> sendGet4Header(String url, Map<String, String> parameters, Map<String, String> headers) throws Exception {
+		BufferedReader in = null;// 读取响应输入流
+		StringBuffer sb = new StringBuffer();// 存储参数
+		String params = "";// 编码之后的参数
+		try {
+			// 编码请求参数
+			if (parameters != null && !parameters.isEmpty()) {
+				for (String name : parameters.keySet()) {
+					sb.append(name)
+							.append("=")
+							.append(URLEncoder.encode(
+									parameters.get(name), PropertiesConstants.ENCODING)).append("&");
+				}
+				String temp_params = sb.toString();
+				params = temp_params.substring(0, temp_params.length() - 1);
+				if(url.indexOf("?")==-10) {
+					url = url + "?";
+				}else {
+					url = url + "&";
+				}
+				url = url + params;
+			}
+			// 创建URL对象
+			URL connURL = new URL(url);
+			// 打开URL连接
+			HttpURLConnection httpConn = (HttpURLConnection) connURL
+					.openConnection();
+			// 设置通用属性
+			httpConn.setRequestProperty("Accept", "*/*");
+			
+			if(headers != null){
+				for (Entry<String, String> e : headers.entrySet()) {
+					httpConn.setRequestProperty(e.getKey(), e.getValue());
+				}
+			}
+			// 建立实际的连接
+			httpConn.connect();
+			
+			return httpConn.getHeaderFields();
 		} finally {
 			try {
 				if (in != null) {
@@ -196,6 +255,84 @@ public class HttpUtils {
 		}
 		return result;
 	}
+	
+	/**
+	 * 发送POST请求
+	 * @param url
+	 *            目的地址
+	 * @param parameters
+	 *            请求参数，Map类型。
+	 * @param headers 额外的header
+	 * @return 远程响应结果
+	 */
+	public static String sendPost(String url, String params,Map<String, String> headers) throws Exception {
+		String result = "";// 返回的结果
+		BufferedReader br = null;// 读取响应输入流
+		try {
+			HttpURLConnection conn = getHttpURLConnection(url, headers);
+			
+			DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os,PropertiesConstants.ENCODING));
+			writer.write(params);
+			writer.flush();
+			writer.close();
+			
+			br = new BufferedReader(new InputStreamReader(
+					conn.getInputStream(),PropertiesConstants.ENCODING));
+
+			String output;
+			StringBuilder sb = new StringBuilder();
+			while ((output = br.readLine()) != null) {
+				sb.append(PropertiesConstants.LINE_SEPARATOR);
+				sb.append(output);
+			}
+			result = sb.toString();
+		} finally {
+			try {
+				if (br != null) {
+					br.close();
+				}
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 发送POST请求
+	 * @param url
+	 *            目的地址
+	 * @param parameters
+	 *            请求参数，Map类型。
+	 * @param headers 额外的header
+	 * @return 远程响应cookie
+	 */
+	public static Map<String, List<String>> sendPost4Header(String url, String params,Map<String, String> headers) throws Exception {
+		HttpURLConnection conn = getHttpURLConnection(url, headers);
+		
+		DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os,PropertiesConstants.ENCODING));
+		writer.write(params);
+		writer.flush();
+		writer.close();
+		
+		return conn.getHeaderFields();
+			/*
+			br = new BufferedReader(new InputStreamReader(
+					conn.getInputStream(),PropertiesConstants.ENCODING));
+
+			String output;
+			StringBuilder sb = new StringBuilder();
+			while ((output = br.readLine()) != null) {
+				sb.append(PropertiesConstants.LINE_SEPARATOR);
+				sb.append(output);
+			}
+			result = sb.toString();*/
+	}
+	
+	
 
 	/**
 	 * 发送POST请求
@@ -231,7 +368,7 @@ public class HttpUtils {
 					conn.setRequestProperty(e.getKey(), e.getValue());
 				}
 			}
-			conn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
+//			conn.setRequestProperty("User-Agent", ua[Math.abs(new Random().nextInt()%15)]);
 		} catch (IOException e) {
 			String msg = String.format(
 					"Failed to connect sms API[%s] in [%d] seconds: %s", spec,
