@@ -1,6 +1,5 @@
 package com.oe.util.task;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -8,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -26,7 +24,7 @@ import com.oe.util.HttpUtils;
 public class NewSkuTask {	
 	
 	private String url = "http://113.108.97.88:85/index.php";
-	private static int limit = 3;
+	private static int limit = 2;
 	
 	
 	public static Map<String, String> postHeaders = new HashMap<String, String>(){
@@ -128,7 +126,7 @@ public class NewSkuTask {
 			Element element = select.get(i);
 			s += element.attr("value");
 			if(!(i==select.size() - 1 || i == limit - 1)) {
-				s += "%2";
+				s += ",";
 			}
 		}
 		return s;
