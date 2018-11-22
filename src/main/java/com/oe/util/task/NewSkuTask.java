@@ -1,6 +1,7 @@
 package com.oe.util.task;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,7 @@ import com.oe.util.HttpUtils;
 public class NewSkuTask {	
 	
 	private String url = "http://113.108.97.88:85/index.php";
-	private static int limit = 2;
+	private static int limit = 3;
 	
 	
 	public static Map<String, String> postHeaders = new HashMap<String, String>(){
@@ -49,13 +50,16 @@ public class NewSkuTask {
 			
 	private String loginRefer = "http://113.108.97.88:85/index.php?m=Index&a=index";
 	
-	@Scheduled(cron = "0 57 8 * * * ")
+	@Scheduled(cron = "20 58 8 * * * ")
     public void run(){
         System.out.println ("start running" );
-        Random random = new Random();
         //login 
         try {
         	System.out.println("get cookie...");
+        	
+        	postHeaders.put("Cookie", null);
+        	getHeaders.put("Cookie", null);
+        	
         	getHeaders.put("Referer", "http://113.108.97.88:85/index.php/Index/main/");
         	Map<String, List<String>> sendGet4Header = HttpUtils.sendGet4Header(url, null, getHeaders);
         	List<String> list = sendGet4Header.get("Set-Cookie");
@@ -84,25 +88,19 @@ public class NewSkuTask {
 					if(cal.get(Calendar.HOUR) > 9 && cal.get(Calendar.MINUTE) > 2) {
 						break;
 					}
+					boolean hasGet = false;
 					
-					String getUrl = "/Deadstock/getnewproduct?category=FT&keyword=&sort=";
-					
-					getHeaders.put("Referer", "http://113.108.97.88:85/index.php/Deadstock/getnewproduct?category=&keyword=&sort=");
-					String sendGet = HttpUtils.sendGet(url + getUrl, null, getHeaders);
-					System.out.println("list result ");
-					String parseHtml = parseHtml(sendGet);
-					if(parseHtml == null) {
-						System.out.println("find no result...");
-						Thread.sleep((1500 + random.nextInt(10) * 100));
-						continue;
+					if(getByKeyword("FT")) {
+						hasGet = true;
 					}
 					
-					System.out.println("get skus:" + parseHtml);
-					postHeaders.put("Referer", url + getUrl);
-					String sendPost = HttpUtils.sendPost(url + "Deadstock/getproductrecord/", parseHtml ,postHeaders);
+					/*if(getByKeyword("QZ")) {
+						hasGet = true;
+					}*/
 					
-					System.out.println("get skus result : " + sendPost);
-					break;
+					if(hasGet) {
+						break;
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 					continue;
@@ -115,21 +113,45 @@ public class NewSkuTask {
     }
 	
 	
-	public String parseHtml(String html) {
+	public boolean getByKeyword(String keyword) throws Exception {
+		Random random = new Random();
+		
+		String getUrl = "/Deadstock/getnewproduct?category=&keyword=" + keyword+"&sort=";
+		
+		getHeaders.put("Referer", "http://113.108.97.88:85/index.php/Deadstock/getnewproduct?category=&keyword=&sort=");
+		String sendGet = HttpUtils.sendGet(url + getUrl, null, getHeaders);
+		System.out.println("list result ");
+		List<String> parseHtml = parseHtml(sendGet);
+		if(parseHtml.isEmpty()) {
+			System.out.println("find no result...");
+			Thread.sleep((1500 + random.nextInt(10) * 100));
+			return false;
+		}
+		
+		System.out.println("get skus:" + parseHtml);
+		postHeaders.put("Referer", url + getUrl);
+		for (String str : parseHtml) {
+			String sendPost = HttpUtils.sendPost(url + "Deadstock/getproductrecord/", "obj=" + str ,postHeaders);
+			System.out.println("get skus result : " + sendPost);
+		}
+		return true;
+	}
+	
+	
+	public List<String> parseHtml(String html) {
+		List<String> list = new ArrayList<String>();
 		Document doc = Jsoup.parse(html);
 		Elements select = doc.select("#table td input");
 		if(select==null || select.isEmpty()) {
-			return null;
+			return list;
 		}
-		String s=  "";
 		for(int i=0; i<select.size() && i < limit; i++) {
 			Element element = select.get(i);
-			s += element.attr("value");
 			if(!(i==select.size() - 1 || i == limit - 1)) {
-				s += ",";
+				list.add(element.attr("value"));
 			}
 		}
-		return s;
+		return list;
 	}
 	
 	public static void main(String[] args) throws IOException {

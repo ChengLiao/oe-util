@@ -25,19 +25,55 @@ public class ReadJson {
 		}
 		System.out.println("================================>");
 //		complete(skus);
+		List<String> ids = new ArrayList<String>();
+		
 		for (Sku sku : skus) {
 //			System.out.println(sku);
-			StringBuilder sb = new StringBuilder();
-			sb.append("%s\t%s\tUPC");
-			sb.append(tab(8));
-			sb.append("2038711\tFaithtur");
-			sb.append(tab(18));
-			sb.append("%s");
-			sb.append(tab(9));
-			sb.append("White\tWhite\t\t\tFemale\t%s\t%s\tsize\t\t0.50\t1b\t\t\tclothingSize\tcolor");
-			
-			System.out.println(String.format(sb.toString(), sku.getId() ,sku.getName(),
-					sku.getPrice(),sku.getAgeGroup(), sku.getSizeGroup()));
+			if(sku.getSubSkus()!=null && sku.getSubSkus().size() > 0) {
+				List subSkus = sku.getSubSkus();
+				for (Object subSku : subSkus) {
+					
+					
+					StringBuilder sb = new StringBuilder();
+					Map map = (Map)subSku;
+					
+					if(ids.contains(map.get("id"))) {
+						continue;
+					}
+					ids.add((String) map.get("id"));
+					
+					sb.append("%s\t%s\tUPC");
+					sb.append(tab(8));
+					sb.append("2038711\tFaithtur");
+					sb.append(tab(18));
+					sb.append("%s");
+					sb.append(tab(9));
+					sb.append("White\tWhite\t\t\tFemale\t%s\t%s\t" + map.get("size") + "\t\t0.50\t1b\t\t\tclothingSize\tcolor");
+					sb.append("\t").append(sku.getAmazonLink());
+					sb.append("\t").append(sku.getPicLink());
+					System.out.println(String.format(sb.toString(), map.get("id") ,sku.getName(),
+							sku.getPrice(),sku.getAgeGroup(), sku.getSizeGroup()));
+				}
+			}else {
+				if(ids.contains(sku.getId())) {
+					continue;
+				}
+				ids.add(sku.getId());
+				
+				StringBuilder sb = new StringBuilder();
+				
+				sb.append("%s\t%s\tUPC");
+				sb.append(tab(8));
+				sb.append("2038711\tFaithtur");
+				sb.append(tab(18));
+				sb.append("%s");
+				sb.append(tab(9));
+				sb.append("White\tWhite\t\t\tFemale\t%s\t%s\tsize\t\t0.50\t1b\t\t\tclothingSize\tcolor");
+				sb.append("\t").append(sku.getAmazonLink());
+				sb.append("\t").append(sku.getPicLink());
+				System.out.println(String.format(sb.toString(), sku.getId() ,sku.getName(),
+						sku.getPrice(),sku.getAgeGroup(), sku.getSizeGroup()));
+			}
 		}
 		
 		
