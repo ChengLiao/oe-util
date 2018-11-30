@@ -13,6 +13,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,8 +26,14 @@ import com.oe.util.HttpUtils;
 public class NewSkuTask {	
 	
 	private String url = "http://113.108.97.88:85/index.php";
-	private static int limit = 3;
+	private static int limit = 2;
+	@Value("${limit}")
+	private int realLimit;
+	@Value("${runLimit}")
+	private int runLimit;
 	
+	@Value("${isRandom}")
+	private boolean isRandom;
 	
 	public static Map<String, String> postHeaders = new HashMap<String, String>(){
 		{
@@ -50,9 +57,23 @@ public class NewSkuTask {
 			
 	private String loginRefer = "http://113.108.97.88:85/index.php?m=Index&a=index";
 	
-	@Scheduled(cron = "20 58 8 * * * ")
+//	@Scheduled(cron = "20 58 8 * * * ")
+	@Scheduled(cron = "0/5 * * * * * ")
     public void run(){
         System.out.println ("start running" );
+        if(isRandom) {
+        	int i = getRandom(3);
+        	if(i==0) {
+        		System.out.println("no running");
+        		return;
+        	}
+        }
+        if(isRandom) {
+        	limit = 1 + getRandom(realLimit);
+        }else {
+        	limit = realLimit;
+        }
+        System.out.println("limit count : " + limit);
         //login 
         try {
         	System.out.println("get cookie...");
@@ -85,7 +106,7 @@ public class NewSkuTask {
 				System.out.println("start get list");
 				try {
 					Calendar cal = Calendar.getInstance();
-					if(cal.get(Calendar.HOUR) > 9 && cal.get(Calendar.MINUTE) > 2) {
+					if(cal.get(Calendar.HOUR_OF_DAY) >= 9 && cal.get(Calendar.MINUTE) > 2) {
 						break;
 					}
 					boolean hasGet = false;
@@ -113,6 +134,12 @@ public class NewSkuTask {
     }
 	
 	
+	private int getRandom(int i) {
+		Random random = new Random();
+		return random.nextInt(i);
+	}
+
+
 	public boolean getByKeyword(String keyword) throws Exception {
 		Random random = new Random();
 		
@@ -155,7 +182,14 @@ public class NewSkuTask {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		new NewSkuTask().run();
+		NewSkuTask task = new NewSkuTask();
+		for(int i=0; i<10; i++) {
+			System.out.println(task.getRandom(2));
+		}
+		System.out.println("=================");
+		for(int i=0; i<10; i++) {
+			System.out.println(1 + task.getRandom(2));
+		}
 		
 	}
 }
